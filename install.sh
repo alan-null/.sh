@@ -3,6 +3,15 @@
 sudo apt update -y
 sudo apt install -y curl git zsh fzf tmux
 
+REPO_URL="https://github.com/alan-null/.sh.git"
+INSTALL_DIR="$HOME/.linux-setup"
+
+if [[ ! -d "$INSTALL_DIR" ]]; then
+    git clone --depth=1 "$REPO_URL" "$INSTALL_DIR"
+fi
+
+cd "$INSTALL_DIR" || exit
+
 # oh-my-zsh
 if [[ ! -d "$HOME/.oh-my-zsh" ]]; then
     sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
@@ -23,21 +32,8 @@ fi
 TMUX_CONF="$HOME/.tmux.conf"
 touch "$TMUX_CONF"
 
-TMUX_SETTINGS="
-# Set default shell to zsh
-set-option -g default-shell $(which zsh)
-
-# List of plugins
-set -g @plugin 'tmux-plugins/tpm'
-set -g @plugin 'tmux-plugins/tmux-sensible'
-set -g @plugin 'tmux-plugins/tmux-resurrect'
-set -g @resurrect-dir ~/.tmux/resurrect
-
-# Initialize TMUX plugin manager
-run '~/.tmux/plugins/tpm/tpm'
-"
-
-echo "$TMUX_SETTINGS" | while read -r line; do
+cat .tmux.conf | while read line
+do
     grep -qxF "$line" "$TMUX_CONF" || echo "$line" >> "$TMUX_CONF"
 done
 
