@@ -29,13 +29,7 @@ if ! grep -q "fzf" ~/.zshrc; then
 fi
 
 # tmux
-TMUX_CONF="$HOME/.tmux.conf"
-touch "$TMUX_CONF"
-
-cat .tmux.conf | while read line
-do
-    grep -qxF "$line" "$TMUX_CONF" || echo "$line" >> "$TMUX_CONF"
-done
+ln -sf "$HOME/.linux-setup/.tmux.conf" "$HOME/.tmux.conf"
 
 if [[ ! -d "$HOME/.tmux/plugins/tpm" ]]; then
     git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm
