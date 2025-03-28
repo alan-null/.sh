@@ -28,6 +28,12 @@ if ! grep -q "fzf" ~/.zshrc; then
     sed -i '/^plugins=/ s/)/ fzf)/' ~/.zshrc
 fi
 
+# zshrc
+ZSHRC_CONF="$HOME/.zshrc"
+touch "$ZSHRC_CONF"
+line="[[ -f \"$HOME/.linux-setup/.zshrc\" ]] && source \"$HOME/.linux-setup/.zshrc\""
+grep -qxF "$line" "$ZSHRC_CONF" || echo "$line" >> "$ZSHRC_CONF"
+
 # tmux
 ln -sf "$HOME/.linux-setup/.tmux.conf" "$HOME/.tmux.conf"
 
