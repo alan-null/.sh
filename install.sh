@@ -4,10 +4,12 @@ sudo apt update -y
 sudo apt install -y curl git zsh fzf tmux
 
 REPO_URL="https://github.com/alan-null/.sh.git"
-INSTALL_DIR="$HOME/.linux-setup"
+INSTALL_DIR="$HOME/.sh"
 
 if [[ ! -d "$INSTALL_DIR" ]]; then
     git clone --depth=1 "$REPO_URL" "$INSTALL_DIR"
+else
+    git -C "$INSTALL_DIR" pull --ff-only
 fi
 
 cd "$INSTALL_DIR" || exit
@@ -20,7 +22,7 @@ else
 fi
 
 # zsh theme
-curl -fsSL "https://raw.githubusercontent.com/ergenekonyigit/lambda-gitster/refs/heads/main/lambda-gitster.zsh-theme" -o "$HOME/.oh-my-zsh/custom/themes/lambda-gitster.zsh-theme"
+ln -sf "$INSTALL_DIR/themes/lambda-gitster.zsh-theme" "$HOME/.oh-my-zsh/custom/themes/lambda-gitster.zsh-theme"
 sed -i 's/^ZSH_THEME=.*/ZSH_THEME="lambda-gitster"/' "$HOME/.zshrc"
 
 # zsh plugins
@@ -31,11 +33,11 @@ fi
 # zshrc
 ZSHRC_CONF="$HOME/.zshrc"
 touch "$ZSHRC_CONF"
-line="[[ -f \"$HOME/.linux-setup/.zshrc\" ]] && source \"$HOME/.linux-setup/.zshrc\""
+line="[[ -f \"$HOME/.sh/.zshrc\" ]] && source \"$HOME/.sh/.zshrc\""
 grep -qxF "$line" "$ZSHRC_CONF" || echo "$line" >> "$ZSHRC_CONF"
 
 # tmux
-ln -sf "$HOME/.linux-setup/.tmux.conf" "$HOME/.tmux.conf"
+ln -sf "$HOME/.sh/.tmux.conf" "$HOME/.tmux.conf"
 
 if [[ ! -d "$HOME/.tmux/plugins/tpm" ]]; then
     git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm
