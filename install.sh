@@ -36,6 +36,14 @@ touch "$ZSHRC_CONF"
 line="[[ -f \"$HOME/.sh/.zshrc\" ]] && source \"$HOME/.sh/.zshrc\""
 grep -qxF "$line" "$ZSHRC_CONF" || echo "$line" >> "$ZSHRC_CONF"
 
+# git aliases (optional)
+read -r -p "Install git aliases (gpl, gph, gc, gl, ...)? [y/N] " install_aliases
+if [[ "$install_aliases" == "y" || "$install_aliases" == "Y" ]]; then
+    alias_line="[[ -f \"$INSTALL_DIR/aliases/git-aliases.sh\" ]] && source \"$INSTALL_DIR/aliases/git-aliases.sh\""
+    grep -qxF "$alias_line" "$ZSHRC_CONF" || echo "$alias_line" >> "$ZSHRC_CONF"
+    echo "Git aliases installed."
+fi
+
 # tmux
 ln -sf "$HOME/.sh/.tmux.conf" "$HOME/.tmux.conf"
 
