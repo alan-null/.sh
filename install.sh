@@ -1,11 +1,15 @@
 #!/bin/bash
 
-sudo apt update -y
-sudo apt install -y curl git zsh fzf tmux
+sudo -v
 
 REPO_URL="https://github.com/alan-null/.sh.git"
 INSTALL_DIR="$HOME/.sh"
-BRANCH="${INSTALL_BRANCH:-main}"
+BRANCH="${INSTALL_BRANCH:-master}"
+
+echo "→ Installing .sh from $REPO_URL (branch: $BRANCH) to $INSTALL_DIR"
+
+sudo apt update -y
+sudo apt install -y curl git zsh fzf tmux
 
 if [[ ! -d "$INSTALL_DIR" ]]; then
     git clone --depth=1 -b "$BRANCH" "$REPO_URL" "$INSTALL_DIR"
@@ -37,13 +41,28 @@ touch "$ZSHRC_CONF"
 line="[[ -f \"$HOME/.sh/.zshrc\" ]] && source \"$HOME/.sh/.zshrc\""
 grep -qxF "$line" "$ZSHRC_CONF" || echo "$line" >> "$ZSHRC_CONF"
 
-# git aliases (optional)
-read -r -p "Install git aliases (gpl, gph, gc, gl, ...)? [y/N] " install_aliases
-if [[ "$install_aliases" == "y" || "$install_aliases" == "Y" ]]; then
-    alias_line="[[ -f \"$INSTALL_DIR/aliases/git-aliases.sh\" ]] && source \"$INSTALL_DIR/aliases/git-aliases.sh\""
-    grep -qxF "$alias_line" "$ZSHRC_CONF" || echo "$alias_line" >> "$ZSHRC_CONF"
-    echo "Git aliases installed."
-fi
+# load modules
+source "$INSTALL_DIR/includes/multiselect.sh"
+source "$INSTALL_DIR/includes/install_git_aliases.sh"
+source "$INSTALL_DIR/includes/install_terminal_aliases.sh"
+
+# optional components
+echo "Select optional components to install:"
+echo
+
+declare -A choices
+multiselect choices \
+    "Aliases:" \
+        "Git aliases (gpl, gph, gc, gl...)" \
+        "Terminal aliases (cls, ..)" \
+    "Packages:" \
+        "btop (modern top replacement)" \
+
+echo
+[[ "${choices["Git aliases (gpl, gph, gc, gl...)"]}" == "true" ]] && install_git_aliases "$INSTALL_DIR" "$ZSHRC_CONF"
+[[ "${choices["Terminal aliases (cls, ..)"]}" == "true" ]] && install_terminal_aliases "$INSTALL_DIR" "$ZSHRC_CONF"
+[[ "${choices["btop (modern top replacement)"]}" == "true" ]] && sudo -v && sudo apt install -y btop && echo "→ btop installed"
+
 
 # tmux
 ln -sf "$HOME/.sh/.tmux.conf" "$HOME/.tmux.conf"
@@ -53,6 +72,6 @@ if [[ ! -d "$HOME/.tmux/plugins/tpm" ]]; then
 fi
 ~/.tmux/plugins/tpm/bin/install_plugins
 
-chsh -s $(which zsh)
+sudo usermod -s $(which zsh) $USER
 
 exec zsh
