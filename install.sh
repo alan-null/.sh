@@ -5,9 +5,10 @@ sudo apt install -y curl git zsh fzf tmux
 
 REPO_URL="https://github.com/alan-null/.sh.git"
 INSTALL_DIR="$HOME/.sh"
+BRANCH="${INSTALL_BRANCH:-main}"
 
 if [[ ! -d "$INSTALL_DIR" ]]; then
-    git clone --depth=1 "$REPO_URL" "$INSTALL_DIR"
+    git clone --depth=1 -b "$BRANCH" "$REPO_URL" "$INSTALL_DIR"
 else
     git -C "$INSTALL_DIR" pull --ff-only
 fi
