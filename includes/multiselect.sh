@@ -74,9 +74,10 @@ function multiselect() {
     done
 
     while true; do
-        IFS= read -rsn1 key
+        # read directly from /dev/tty so arrow keys work when stdin is a pipe
+        IFS= read -rsn1 key </dev/tty
         if [[ $key == $'\x1b' ]]; then
-            read -rsn2 key
+            read -rsn2 key </dev/tty
             case $key in
                 '[A') ((cursor > 0)) && ((cursor--)) ;;
                 '[B') ((cursor < total_options-1)) && ((cursor++)) ;;
