@@ -1,7 +1,5 @@
 #!/bin/bash
 
-sudo -v
-
 REPO_URL="https://github.com/alan-null/.sh.git"
 INSTALL_DIR="$HOME/.sh"
 BRANCH="${INSTALL_BRANCH:-master}"
@@ -23,7 +21,7 @@ cd "$INSTALL_DIR" || exit
 if [[ ! -d "$HOME/.oh-my-zsh" ]]; then
     sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
 else
-    omz update
+    git -C "$HOME/.oh-my-zsh" pull --ff-only
 fi
 
 # zsh theme
