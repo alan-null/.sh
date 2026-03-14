@@ -20,7 +20,7 @@ multiselect choices \
         "Terminal aliases (cls, ..)" \
     "Packages:" \
         "btop (modern top replacement)" \
-        "yazi (terminal file manager)" \
+        "~yazi (terminal file manager)" \
 
 echo
 

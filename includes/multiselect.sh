@@ -25,11 +25,17 @@ function multiselect() {
             current_group="$item"
             render+=("group:$current_group")
         else
+            local default=true
+            local label="$item"
+            if [[ "$item" == "~"* ]]; then
+                default=false
+                label="${item:1}"
+            fi
             local idx=${#options[@]}
-            options+=("$item")
+            options+=("$label")
             groups+=("$current_group")
-            selected+=(true)
-            result["$item"]=true
+            selected+=($default)
+            result["$label"]=$default
             render+=("option:$idx")
         fi
     done
