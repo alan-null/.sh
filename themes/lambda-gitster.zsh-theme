@@ -15,7 +15,15 @@ function get_pwd(){
   echo $prompt_short_dir
 }
 
+function get_host_info(){
+  # Show host on SSH by default; set PROMPT_SHOW_HOST_ALWAYS=1 to always display.
+  if [[ -n "$SSH_CONNECTION" || -n "$PROMPT_SHOW_HOST_ALWAYS" ]]; then
+    echo "%{$fg_bold[blue]%}%n@%m%{$reset_color%}"
+  fi
+}
+
 PROMPT='$ret_status %{$fg[white]%}$(get_pwd) $(git_prompt_info)$(git_prompt_status)$(git_commits_ahead)$(git_commits_behind)%{$reset_color%} '
+RPROMPT='$(get_host_info)'
 
 ZSH_THEME_GIT_PROMPT_PREFIX="%{$fg[cyan]%}"
 ZSH_THEME_GIT_PROMPT_SUFFIX="%{$reset_color%}"
