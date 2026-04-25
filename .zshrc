@@ -24,6 +24,9 @@ export KEY_SHIFT_END=${terminfo[kEND]:-$'^[[1;2F'}
 export KEY_SHIFT_CMD_LEFT=$'^[[1;6D'
 export KEY_SHIFT_CMD_RIGHT=$'^[[1;6C'
 
+export KEY_SHIFT_CMD_HOME=$'^[[1;6H'
+export KEY_SHIFT_CMD_END=$'^[[1;6F'
+
 # WIDGETS
 zle -N widget::select-all
 widget::select-all() {
@@ -83,6 +86,9 @@ for key               seq                     mode            widget (
 
     ctrl-shift-left   $KEY_SHIFT_CMD_LEFT     select          backward-word
     ctrl-shift-right  $KEY_SHIFT_CMD_RIGHT    select          forward-word
+
+    ctrl-shift-home   $KEY_SHIFT_CMD_HOME     select          beginning-of-line
+    ctrl-shift-end    $KEY_SHIFT_CMD_END      select          end-of-line
 
     delete            $KEY_DELETE             delete          delete-char
     backspace         $KEY_BACKSPACE          delete          backward-delete-char
