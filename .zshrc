@@ -1,3 +1,6 @@
+# local bin
+export PATH="$HOME/.local/bin:$PATH"
+
 # KEYS
 export KEY_ESC=$'^['
 
@@ -27,7 +30,19 @@ export KEY_SHIFT_CMD_RIGHT=$'^[[1;6C'
 export KEY_SHIFT_CMD_HOME=$'^[[1;6H'
 export KEY_SHIFT_CMD_END=$'^[[1;6F'
 
+export KEY_CMD_X=$'^X'
+
 # WIDGETS
+# in the WIDGETS section
+zle -N widget::cut
+widget::cut() {
+  if ((REGION_ACTIVE)); then
+    zle copy-region-as-kill
+    print -rn -- $CUTBUFFER | xclip -selection clipboard
+    zle kill-region
+  fi
+}
+
 zle -N widget::select-all
 widget::select-all() {
   zle beginning-of-line
@@ -63,6 +78,7 @@ widget::delete(){
 bindkey               $KEY_CMD_Y              redo
 bindkey               $KEY_CMD_Z              undo
 bindkey               $KEY_CMD_A              widget::select-all
+# bindkey               $KEY_CMD_X              widget::cut
 
 for key               seq                     mode            widget (
     esc               $KEY_ESC                deselect        vi-insert
