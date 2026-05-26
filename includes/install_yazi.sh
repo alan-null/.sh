@@ -2,26 +2,36 @@
 
 # Install yazi file manager with smart-enter plugin
 
+IS_TERMUX=false
+if [[ -n "${TERMUX_VERSION:-}" ]] || [[ "${PREFIX:-}" == *"com.termux"* ]] || [[ -d "/data/data/com.termux/files/usr" ]]; then
+	IS_TERMUX=true
+fi
+
 ARCH="${YAZI_ARCH:-x86_64-unknown-linux-musl}"
 YAZI_CONFIG_DIR="$HOME/.config/yazi"
 TMP_DIR="$(mktemp -d)"
 
 echo "→ Installing yazi ($ARCH)"
 
-# Dependencies
-sudo apt install -y unzip
+if [[ "$IS_TERMUX" == "true" ]]; then
+	echo "→ Installing yazi from Termux repositories"
+	pkg install -y yazi
+else
+	# Dependencies
+	sudo apt install -y unzip
 
-# Download and extract
-DOWNLOAD_URL="https://github.com/sxyazi/yazi/releases/latest/download/yazi-${ARCH}.zip"
-curl -L --progress-bar -o "$TMP_DIR/yazi.zip" "$DOWNLOAD_URL"
-unzip -q "$TMP_DIR/yazi.zip" -d "$TMP_DIR"
+	# Download and extract
+	DOWNLOAD_URL="https://github.com/sxyazi/yazi/releases/latest/download/yazi-${ARCH}.zip"
+	curl -L --progress-bar -o "$TMP_DIR/yazi.zip" "$DOWNLOAD_URL"
+	unzip -q "$TMP_DIR/yazi.zip" -d "$TMP_DIR"
 
-# Install binaries
-sudo cp "$TMP_DIR/yazi-${ARCH}/yazi" /usr/local/bin/
-sudo chmod +x /usr/local/bin/yazi
+	# Install binaries
+	sudo cp "$TMP_DIR/yazi-${ARCH}/yazi" /usr/local/bin/
+	sudo chmod +x /usr/local/bin/yazi
 
-sudo cp "$TMP_DIR/yazi-${ARCH}/ya" /usr/local/bin/
-sudo chmod +x /usr/local/bin/ya
+	sudo cp "$TMP_DIR/yazi-${ARCH}/ya" /usr/local/bin/
+	sudo chmod +x /usr/local/bin/ya
+fi
 
 # Cleanup
 rm -rf "$TMP_DIR"

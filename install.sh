@@ -4,10 +4,23 @@ REPO_URL="https://github.com/alan-null/.sh.git"
 INSTALL_DIR="$HOME/.sh"
 BRANCH="${INSTALL_BRANCH:-master}"
 
-echo "→ Installing .sh from $REPO_URL (branch: $BRANCH) to $INSTALL_DIR"
+IS_TERMUX=false
+if [[ -n "${TERMUX_VERSION:-}" ]] || [[ "${PREFIX:-}" == *"com.termux"* ]] || [[ -d "/data/data/com.termux/files/usr" ]]; then
+    IS_TERMUX=true
+fi
 
-sudo apt update -y
-sudo apt install -y curl git zsh fzf tmux
+install_packages() {
+    if [[ "$IS_TERMUX" == "true" ]]; then
+        pkg update -y
+        pkg install -y curl git zsh fzf tmux
+    else
+        sudo apt update -y
+        sudo apt install -y curl git zsh fzf tmux
+    fi
+}
+
+echo "→ Installing .sh from $REPO_URL (branch: $BRANCH) to $INSTALL_DIR"
+install_packages
 
 if [[ ! -d "$INSTALL_DIR" ]]; then
     git clone --depth=1 -b "$BRANCH" "$REPO_URL" "$INSTALL_DIR"
@@ -47,7 +60,15 @@ if [[ ! -d "$HOME/.tmux/plugins/tpm" ]]; then
 fi
 ~/.tmux/plugins/tpm/bin/install_plugins
 
-sudo usermod -s $(which zsh) $USER
+if [[ "$IS_TERMUX" == "true" ]]; then
+    if command -v chsh >/dev/null 2>&1; then
+        chsh -s "$(command -v zsh)"
+    else
+        echo "→ Skipping default shell switch (chsh not available in this Termux setup)"
+    fi
+else
+    sudo usermod -s "$(which zsh)" "$USER"
+fi
 
 if [ -z "$ZSH_VERSION" ]; then
     exec bash "$INSTALL_DIR/includes/post_install.sh" "$INSTALL_DIR" "$ZSHRC_CONF"
