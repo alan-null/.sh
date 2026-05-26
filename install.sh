@@ -12,7 +12,7 @@ fi
 install_packages() {
     if [[ "$IS_TERMUX" == "true" ]]; then
         pkg update -y
-        pkg install -y curl git zsh fzf tmux
+        pkg install -y git zsh fzf tmux
     else
         sudo apt update -y
         sudo apt install -y curl git zsh fzf tmux
