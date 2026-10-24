@@ -1,3 +1,6 @@
+# add local bin to PATH
+export PATH="$HOME/.local/bin:$PATH"
+
 # KEYS
 export KEY_ESC=$'^['
 
