@@ -1,5 +1,6 @@
 # git aliases
 
+alias gs='git status -sb'
 alias gpl='git pull'
 alias gph='git push'
 alias gphf='git push --force'
