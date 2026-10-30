@@ -1,10 +1,19 @@
 #!/usr/bin/env bash
 set -u
 
-# tmux command palette. Requires fzf and tmux >= 3.2.
+# Tabbed tmux command palette. Requires fzf and tmux >= 3.2.
 
 preview() {
   case "${1:-}" in
+    session:*)
+      tmux display-message -p -t "${1#*:}" $'SESSION\n\n#{session_name}\n#{session_windows} windows\n#{session_attached} attached clients\n\nEnter to switch to this session.'
+      ;;
+    window:*)
+      tmux display-message -p -t "${1#*:}" $'WINDOW\n\n#{session_name}:#{window_index} - #{window_name}\n#{window_panes} panes\n\nActive command: #{pane_current_command}\nDirectory: #{pane_current_path}\n\nEnter to switch to this window.'
+      ;;
+    pane:*)
+      tmux display-message -p -t "${1#*:}" $'PANE\n\n#{session_name}:#{window_index}.#{pane_index} - #{window_name}\nCommand: #{pane_current_command}\nDirectory: #{pane_current_path}\nSize: #{pane_width} x #{pane_height}\n\nEnter to focus this pane.'
+      ;;
     new-window) printf 'WINDOWS\n\nCreate a new window in the current session.\n\ntmux new-window\n' ;;
     rename-window) printf 'WINDOWS\n\nRename the currently selected window.\n\ntmux command-prompt ... rename-window\n' ;;
     next-window) printf 'WINDOWS\n\nSwitch to the next window.\n\ntmux next-window\n' ;;
@@ -31,15 +40,6 @@ preview() {
 if [[ "${1:-}" == '--preview' ]]; then
   preview "${2:-}"
   exit 0
-fi
-
-if [[ -z "${TMUX:-}" ]]; then
-  echo 'Run this palette inside tmux.' >&2
-  exit 1
-fi
-if ! command -v fzf >/dev/null; then
-  echo 'fzf is required. Install it first.' >&2
-  exit 1
 fi
 
 # Each visible row is a single searchable field; the hidden action ID is after a tab.
@@ -91,7 +91,59 @@ commands() {
   fi
 }
 
-selected=$(commands | fzf \
+load_tab() {
+  case "$1" in
+    Commands) commands ;;
+    Windows)
+      tmux list-windows -a -F $'  #{session_name}:#{window_index}  #{window_name}  (#{window_panes} panes)#{?window_active, [active],}\twindow:#{session_id}:#{window_id}'
+      ;;
+    Sessions)
+      tmux list-sessions -F $'  #{session_name}  (#{session_windows} windows, #{session_attached} attached)\tsession:#{session_id}'
+      ;;
+    Panes)
+      tmux list-panes -a -F $'  #{session_name}:#{window_index}.#{pane_index}  #{window_name}  #{pane_current_command}  #{pane_current_path}#{?pane_active, [active],}\tpane:#{session_id}:#{window_id}.#{pane_id}'
+      ;;
+  esac
+}
+
+if [[ -z "${TMUX:-}" ]]; then
+  echo 'Run this palette inside tmux.' >&2
+  exit 1
+fi
+if ! command -v fzf >/dev/null; then
+  echo 'fzf is required. Install it first.' >&2
+  exit 1
+fi
+
+tabs=(Commands Windows Sessions Panes)
+queries=('' '' '' '')
+rows=('' '' '' '')
+loaded=(0 0 0 0)
+active=0
+
+while :; do
+  if [[ "${loaded[active]}" == 0 ]]; then
+    if ! rows[active]=$(load_tab "${tabs[active]}"); then
+      printf 'Failed to load %s tab.\n' "${tabs[active]}" >&2
+      exit 1
+    fi
+    loaded[active]=1
+  fi
+
+  header='  '
+  for index in "${!tabs[@]}"; do
+    if (( index == active )); then
+      header+="[ ${tabs[index]} ]  "
+    else
+      header+="  ${tabs[index]}    "
+    fi
+  done
+  header+=$'\n  Left/Right tabs   |   Enter select   |   Ctrl+R refresh   |   Ctrl+/ preview   |   Esc close'
+  if (( active == 0 )); then
+    header+=$'\n  COMMAND                      CATEGORY         SHORTCUT'
+  fi
+
+  selected=$(fzf \
   --ansi \
   --delimiter=$'\t' \
   --with-nth=1 \
@@ -102,18 +154,48 @@ selected=$(commands | fzf \
   --pointer='▸' \
   --marker='✓' \
   --info=inline-right \
-  --header='  COMMAND                             CATEGORY          SHORTCUT   •   Enter run   •   Ctrl+/ preview' \
+  --header="$header" \
   --header-first \
+  --query="${queries[active]}" \
+  --print-query \
+  --expect=left,right,ctrl-r \
   --preview="$(printf '%q' "$0") --preview {2}" \
   --preview-window='right:40%:wrap:border-left' \
   --bind='ctrl-/:toggle-preview' \
   --color='bg:#161b22,bg+:#283747,fg:#d5dce4,fg+:#ffffff,hl:#7dd3a8,hl+:#7dd3a8,header:#8093a8,prompt:#7dd3a8,pointer:#7dd3a8,border:#485463,info:#8093a8' \
-) || exit 0
+  < <(printf '%s' "${rows[active]}"))
+  status=$?
+  case "$status" in
+    0|1) ;;
+    130) exit 0 ;;
+    *) printf 'fzf failed (exit %s).\n' "$status" >&2; exit "$status" ;;
+  esac
+
+  mapfile -t response <<< "$selected"
+  queries[active]="${response[0]:-}"
+  case "${response[1]:-}" in
+    left) active=$(( (active + ${#tabs[@]} - 1) % ${#tabs[@]} )); continue ;;
+    right) active=$(( (active + 1) % ${#tabs[@]} )); continue ;;
+    ctrl-r) loaded[active]=0; continue ;;
+  esac
+  selected="${response[2]:-}"
+  [[ -n "$selected" ]] && break
+done
 
 # The second tab-separated field is a stable internal ID (not shown or searched).
 id="${selected##*$'\t'}"
 
 case "$id" in
+  session:*) tmux switch-client -t "${id#*:}" ;;
+  window:*|pane:*)
+    target="${id#*:}"
+    session="${target%%:*}"
+    tmux switch-client -t "$session" || exit 1
+    tmux select-window -t "$target" || exit 1
+    if [[ "$id" == pane:* ]]; then
+      tmux select-pane -t "$target"
+    fi
+    ;;
   new-window)      tmux new-window ;;
   rename-window)   tmux command-prompt -I '#W' 'rename-window -- "%%"' ;;
   next-window)     tmux next-window ;;
