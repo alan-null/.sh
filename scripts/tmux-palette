@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+
+choice=$(printf '%s\n' \
+    "New window" \
+    "Split horizontally" \
+    "Split vertically" \
+    "Rename window" \
+    "List sessions" \
+    | fzf --prompt="tmux > ")
+
+case "$choice" in
+    "New window")
+        tmux new-window ;;
+    "Split horizontally")
+        tmux split-window -h ;;
+    "Split vertically")
+        tmux split-window -v ;;
+    "Rename window")
+        tmux command-prompt -I '#W' 'rename-window -- %%' ;;
+    "List sessions")
+        tmux choose-tree -s ;;
+esac
