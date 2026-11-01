@@ -2,6 +2,8 @@
 set -u
 
 # Tabbed tmux command palette. Requires fzf and tmux >= 3.2.
+COMMANDS_FILE="${TMUX_PALETTE_COMMANDS_FILE:-$(dirname "${BASH_SOURCE[0]}")/tmux-commands.tsv}"
+COMMANDS_CACHE_OPTION=@tmux_palette_commands_cache
 
 preview() {
   case "${1:-}" in
@@ -14,6 +16,10 @@ preview() {
     pane:*)
       tmux display-message -p -t "${1#*:}" $'PANE\n\n#{session_name}:#{window_index}.#{pane_index} - #{window_name}\nCommand: #{pane_current_command}\nDirectory: #{pane_current_path}\nSize: #{pane_width} x #{pane_height}\n\nEnter to focus this pane.'
       ;;
+    file:*) sed -n '1,160p' "${1#*:}" ;;
+    snippet:*)
+      printf '%s\n\n%s\n\n\033[1;38;5;114m%s\033[0m\n' "${2:-}" "${3:-}" "${4:-}"
+      ;;
     new-window) printf 'WINDOWS\n\nCreate a new window in the current session.\n\ntmux new-window\n' ;;
     rename-window) printf 'WINDOWS\n\nRename the currently selected window.\n\ntmux command-prompt ... rename-window\n' ;;
     next-window) printf 'WINDOWS\n\nSwitch to the next window.\n\ntmux next-window\n' ;;
@@ -25,6 +31,7 @@ preview() {
     swap-pane) printf 'PANES\n\nSwap active pane with the next pane.\n\ntmux swap-pane -D\n' ;;
     close-pane) printf 'PANES\n\nAsk for confirmation before closing the active pane.\n' ;;
     session-browser) printf 'SESSIONS\n\nBrowse sessions, windows, and panes using tmux tree mode.\n' ;;
+    switch-tree) printf 'NAVIGATION\n\nSwitch between sessions, windows, and panes.\n\nUse the arrows to move, Enter to select, and Escape to cancel.\n' ;;
     rename-session) printf 'SESSIONS\n\nPrompt for a new session name.\n' ;;
     detach) printf 'SESSIONS\n\nDisconnect this tmux client. Your running programs stay alive.\n' ;;
     copy-mode) printf 'NAVIGATION\n\nEnter tmux copy mode to scroll/search history.\n' ;;
@@ -38,7 +45,7 @@ preview() {
 }
 
 if [[ "${1:-}" == '--preview' ]]; then
-  preview "${2:-}"
+  preview "${2:-}" "${3:-}" "${4:-}" "${5:-}"
   exit 0
 fi
 
@@ -55,6 +62,8 @@ commands() {
       CLIPBOARD)     tint='\033[38;5;216m' ;;
       CONFIGURATION) tint='\033[38;5;110m' ;;
       PERSISTENCE)   tint='\033[38;5;150m' ;;
+      SYSTEM)        tint='\033[38;5;81m' ;;
+      DOCKER)        tint='\033[38;5;114m' ;;
       *)             tint='' ;;
     esac
     local reset='\033[0m' muted='\033[38;5;245m'
@@ -63,7 +72,7 @@ commands() {
     printf -v namecol '%-27s' "$name"
     printf -v catcol '%-15s' "$category"
     printf -v hintcol '%s' "$shortcut"
-    printf '%b\t%s\n' "  ${namecol}  ${tint}${catcol}${reset}  ${muted}${hintcol}${reset}" "$id"
+    printf '%b\t%s\t%s\t%s\t%s\n' "  ${namecol}  ${tint}${catcol}${reset}  ${muted}${hintcol}${reset}" "$id" "${5:-}" "${6:-}" "${7:-}"
   }
 
   add new-window       'New window'            'WINDOWS'       'prefix c'
@@ -77,6 +86,7 @@ commands() {
   add swap-pane        'Swap with next pane'   'PANES'         ''
   add close-pane       'Close pane...'         'PANES'         'prefix x'
   add session-browser  'Browse sessions'       'SESSIONS'      'prefix s'
+  add switch-tree      'Switch pane / window'  'NAVIGATION'    'prefix Tab'
   add rename-session   'Rename session'        'SESSIONS'      'prefix $'
   add detach           'Detach client'         'SESSIONS'      'prefix d'
   add copy-mode        'Enter copy mode'       'NAVIGATION'    'prefix ['
@@ -89,6 +99,25 @@ commands() {
     add save-session    'Save session'          'PERSISTENCE'   'prefix Ctrl+s'
     add restore-session 'Restore session'      'PERSISTENCE'   'prefix Ctrl+r'
   fi
+
+  local cache content line_number=0 name category description snippet
+  cache=$(tmux show-option -gqv "$COMMANDS_CACHE_OPTION") || cache=''
+  if (( refresh_commands )) || [[ "$cache" != "$COMMANDS_FILE"$'\036'* ]]; then
+    content=''
+    [[ ! -f "$COMMANDS_FILE" ]] || content=$(< "$COMMANDS_FILE")
+    cache="$COMMANDS_FILE"$'\036'"$content"
+    tmux set-option -gq "$COMMANDS_CACHE_OPTION" "$cache" || return 1
+  fi
+  content=${cache#*$'\036'}
+  while IFS=$'\t' read -r name category description snippet || [[ -n "$name$category$description$snippet" ]]; do
+    ((line_number += 1))
+    [[ -z "$name" || "$name" == \#* ]] && continue
+    if [[ -z "$category" || -z "$description" || -z "$snippet" ]]; then
+      printf 'Skipping incomplete command at %s:%s\n' "$COMMANDS_FILE" "$line_number" >&2
+      continue
+    fi
+    add "snippet:$line_number" "$name" "$category" "$description" "$category" "$description" "$snippet"
+  done <<< "$content"
 }
 
 load_tab() {
@@ -103,7 +132,37 @@ load_tab() {
     Panes)
       tmux list-panes -a -F $'  #{session_name}:#{window_index}.#{pane_index}  #{window_name}  #{pane_current_command}  #{pane_current_path}#{?pane_active, [active],}\tpane:#{session_id}:#{window_id}.#{pane_id}'
       ;;
+    Files)
+      local cwd root path
+      cwd=$(pane_cwd) || return 1
+      if root=$(git -C "$cwd" rev-parse --show-toplevel 2>/dev/null); then
+        while IFS= read -r path; do
+          printf '  %s\tfile:%s/%s\n' "$path" "$root" "$path"
+        done < <(git -C "$root" ls-files --cached --others --exclude-standard)
+      else
+        while IFS= read -r path; do
+          path=${path#"$cwd"/}
+          printf '  %s\tfile:%s/%s\n' "$path" "$cwd" "$path"
+        done < <(find "$cwd" -type f -not -path '*/.git/*')
+      fi
+      ;;
   esac
+}
+
+pane_cwd() {
+  if [[ -n "${TMUX_PANE:-}" ]]; then
+    tmux display-message -p -t "$TMUX_PANE" '#{pane_current_path}'
+  else
+    tmux display-message -p '#{pane_current_path}'
+  fi
+}
+
+pane_target() {
+  if [[ -n "${TMUX_PANE:-}" ]]; then
+    printf '%s\n' "$TMUX_PANE"
+  else
+    tmux display-message -p '#{pane_id}'
+  fi
 }
 
 if [[ -z "${TMUX:-}" ]]; then
@@ -115,11 +174,13 @@ if ! command -v fzf >/dev/null; then
   exit 1
 fi
 
-tabs=(Commands Windows Sessions Panes)
-queries=('' '' '' '')
-rows=('' '' '' '')
-loaded=(0 0 0 0)
+tabs=(Commands Windows Sessions Panes Files)
+queries=('' '' '' '' '')
+rows=('' '' '' '' '')
+loaded=(0 0 0 0 0)
+refresh_commands=0
 active=0
+[[ "${1:-}" == '--files' ]] && active=4
 
 while :; do
   if [[ "${loaded[active]}" == 0 ]]; then
@@ -132,16 +193,14 @@ while :; do
 
   header='  '
   for index in "${!tabs[@]}"; do
+    printf -v label ' %-10s ' "${tabs[index]}"
     if (( index == active )); then
-      header+="[ ${tabs[index]} ]  "
+      header+=$'\033[48;2;125;211;168m\033[38;2;22;27;34m\033[1m'"$label"$'\033[0m'
     else
-      header+="  ${tabs[index]}    "
+      header+=$'\033[38;2;128;147;168m'"$label"$'\033[0m'
     fi
+    header+='  '
   done
-  header+=$'\n  Left/Right tabs   |   Enter select   |   Ctrl+R refresh   |   Ctrl+/ preview   |   Esc close'
-  if (( active == 0 )); then
-    header+=$'\n  COMMAND                      CATEGORY         SHORTCUT'
-  fi
 
   selected=$(fzf \
   --ansi \
@@ -159,7 +218,7 @@ while :; do
   --query="${queries[active]}" \
   --print-query \
   --expect=left,right,ctrl-r \
-  --preview="$(printf '%q' "$0") --preview {2}" \
+  --preview="$(printf '%q' "$0") --preview {2} {3} {4} {5}" \
   --preview-window='right:40%:wrap:border-left' \
   --bind='ctrl-/:toggle-preview' \
   --color='bg:#161b22,bg+:#283747,fg:#d5dce4,fg+:#ffffff,hl:#7dd3a8,hl+:#7dd3a8,header:#8093a8,prompt:#7dd3a8,pointer:#7dd3a8,border:#485463,info:#8093a8' \
@@ -176,16 +235,32 @@ while :; do
   case "${response[1]:-}" in
     left) active=$(( (active + ${#tabs[@]} - 1) % ${#tabs[@]} )); continue ;;
     right) active=$(( (active + 1) % ${#tabs[@]} )); continue ;;
-    ctrl-r) loaded[active]=0; continue ;;
+    ctrl-r) loaded[active]=0; [[ "${tabs[active]}" != Commands ]] || refresh_commands=1; continue ;;
   esac
   selected="${response[2]:-}"
   [[ -n "$selected" ]] && break
 done
 
-# The second tab-separated field is a stable internal ID (not shown or searched).
-id="${selected##*$'\t'}"
+# Hidden fields carry the snippet data loaded when this tab was opened.
+IFS=$'\t' read -r _ id _ _ snippet_text <<< "$selected"
 
 case "$id" in
+  snippet:*)
+    target=$(pane_target) || exit 1
+    tmux send-keys -t "$target" -l -- "$snippet_text"
+    ;;
+  file:*)
+    file="${id#*:}"
+    if [[ ! -f "$file" ]]; then
+      printf 'File no longer exists: %s\n' "$file" >&2
+      exit 1
+    fi
+    cwd=$(pane_cwd) || exit 1
+    path=$(realpath --relative-to="$cwd" -- "$file") || exit 1
+    printf -v quoted '%q' "$path"
+    target=$(pane_target) || exit 1
+    tmux send-keys -t "$target" -l -- "$quoted"
+    ;;
   session:*) tmux switch-client -t "${id#*:}" ;;
   window:*|pane:*)
     target="${id#*:}"
@@ -207,6 +282,7 @@ case "$id" in
   swap-pane)       tmux swap-pane -D ;;
   close-pane)      tmux confirm-before -p 'Close current pane? (y/n)' 'kill-pane' ;;
   session-browser) tmux choose-tree -s ;;
+  switch-tree)     tmux choose-tree -Z ;;
   rename-session)  tmux command-prompt -I '#S' 'rename-session -- "%%"' ;;
   detach)          tmux detach-client ;;
   copy-mode)       tmux copy-mode ;;

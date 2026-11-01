@@ -1,0 +1,7 @@
+# Add one command per line: name<TAB>category<TAB>description<TAB>snippet
+# Use actual tab characters between fields. Selecting a command inserts its snippet at the shell cursor without running it.
+Update system	SYSTEM	Refresh package lists and upgrade installed packages	sudo apt update && sudo apt upgrade
+Docker disk usage	DOCKER	Show Docker disk usage	docker system df
+Docker prune	DOCKER	Remove unused Docker data after confirmation	docker system prune
+Docker Compose logs	DOCKER	Follow the latest 100 log lines	docker compose logs -f --tail=100
+Docker Compose cleanup	DOCKER	Stop services and remove orphan containers	docker compose down --remove-orphans

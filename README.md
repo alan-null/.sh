@@ -17,15 +17,11 @@ tmux source-file ~/.tmux.conf
 
 #### tmux command center
 
-Press `Ctrl+P` to open the command center. Use Left/Right to switch between
-Commands, Windows, Sessions, and Panes; Enter runs a command or switches to the
-selected target, including targets in other sessions. Esc closes the launcher.
-`Ctrl+/` toggles the preview; `Ctrl+B` / `Ctrl+F` move the search cursor.
+Press `Ctrl+Space` to open the command center on Commands, or `Ctrl+P` to open it on Files. Use Left/Right to switch between Commands, Windows, Sessions, Panes, and Files. Enter selects an item, Esc closes the launcher, `Ctrl+/` toggles the preview, and `Ctrl+R` refreshes the active tab. Each tab keeps its own search query until the launcher closes.
 
-Commands is always the initial tab. Other tabs load only when first opened,
-and their results are cached for that launcher invocation. `Ctrl+R` refreshes
-only the active tab. Each tab retains its own search query. No filesystem
-search runs, and reopening the launcher starts with fresh results.
+Add frequently used shell commands to [scripts/tmux-commands.tsv](scripts/tmux-commands.tsv). Each line has four tab-separated fields: `name`, `category`, `description`, and `snippet`. The name, category, and description are searchable; the preview shows the full snippet. Selecting a snippet inserts it at the current shell cursor without running it. Use actual tabs between fields and keep each snippet on one line. Built-in tmux actions still run when selected. Snippets are cached in the tmux server after the first load; press `Ctrl+R` on Commands to load edits from the file.
+
+Ctrl+Tab opens the tmux pane and window switcher when the terminal passes that key to tmux. In Konsole, this requires a Ctrl+Tab keyboard rule and clearing Konsole's own Next Tab shortcut. Ctrl+B, then Tab opens the switcher as a fallback.
 
 #### Install from branch
 
