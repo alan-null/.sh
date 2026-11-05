@@ -1,0 +1,3 @@
+[submodule "spotlight"]
+	path = spotlight
+	url = https://github.com/alan-null/spotlight.git
