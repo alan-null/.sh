@@ -8,6 +8,13 @@ One liner install:
 bash <(curl -fsSL https://raw.githubusercontent.com/alan-null/.sh/refs/heads/master/install.sh)
 ```
 
+## Updates
+
+Run `sh-update` after loading this repository's Zsh configuration, or run `bash ~/.sh/update.sh` from any directory. The updater fast-forwards the current branch from its configured upstream, then initializes and checks out recursive submodules at the commits recorded by that branch.
+
+Local changes, a detached checkout, a missing upstream, or diverging history stop the update. If a submodule download fails after the shell repository updates, resolve the failure and rerun the command.
+
+Submodules use this repository's pinned commits. Adopting a newer dependency requires updating its submodule reference here. Oh My Zsh, tmux plugins, and system packages use their own update mechanisms. Reload the shell configuration after updating, and reload tmux configuration when bindings change.
 
 ## Spotlight
 

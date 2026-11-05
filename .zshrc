@@ -1,6 +1,9 @@
 # add local bin to PATH
 export PATH="$HOME/.local/bin:$PATH"
 
+# Update the shell checkout and all pinned submodules in one command.
+sh-update() { bash "$HOME/.sh/update.sh" "$@"; }
+
 # KEYS
 export KEY_ESC=$'^['
 
