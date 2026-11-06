@@ -7,18 +7,17 @@ BRANCH="${INSTALL_BRANCH:-master}"
 echo "→ Installing .sh from $REPO_URL (branch: $BRANCH) to $INSTALL_DIR"
 
 sudo apt update -y
-sudo apt install -y curl git zsh fzf tmux python3
-python3 -c 'import sys; sys.exit("Spotlight requires Python 3.11 or newer; upgrade python3 and rerun the installer." if sys.version_info < (3, 11) else 0)' || exit 1
+sudo apt install -y curl git zsh fzf tmux
 
 if [[ ! -d "$INSTALL_DIR" ]]; then
-    git clone --depth=1 --recurse-submodules -b "$BRANCH" "$REPO_URL" "$INSTALL_DIR" || exit 1
+    git clone --depth=1 -b "$BRANCH" "$REPO_URL" "$INSTALL_DIR" || exit 1
 elif [[ -f "$INSTALL_DIR/update.sh" ]]; then
     bash "$INSTALL_DIR/update.sh" || exit 1
 else
     # Bootstrap installations that predate the dedicated updater.
     git -C "$INSTALL_DIR" pull --ff-only || exit 1
     git -C "$INSTALL_DIR" submodule sync --recursive || exit 1
-    git -C "$INSTALL_DIR" submodule update --init --recursive --checkout || exit 1
+    git -C "$INSTALL_DIR" submodule update --recursive --checkout || exit 1
 fi
 
 cd "$INSTALL_DIR" || exit

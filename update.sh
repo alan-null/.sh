@@ -5,7 +5,7 @@ INSTALL_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 
 if [[ ${1:-} == --submodules-only && $# == 1 ]]; then
     git -C "$INSTALL_DIR" submodule sync --recursive
-    git -C "$INSTALL_DIR" submodule update --init --recursive --checkout
+    git -C "$INSTALL_DIR" submodule update --recursive --checkout
     printf '→ Submodules match the versions recorded by .sh.\n'
     exit 0
 fi

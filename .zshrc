@@ -66,18 +66,20 @@ widget::delete(){
 }
 
 # BINDINGS
-spotlight() {
-  local selected
-  zle -I
-  selected=$("$HOME/.sh/spotlight/bin/spotlight" "${1:-}") || return
-  LBUFFER+=$selected
-  zle redisplay
-}
-zle -N spotlight
-spotlight-files() { spotlight --files; }
-zle -N spotlight-files
-bindkey '^@' spotlight
-bindkey '^P' spotlight-files
+if [[ -x "$HOME/.sh/spotlight/bin/spotlight" ]]; then
+  spotlight() {
+    local selected
+    zle -I
+    selected=$("$HOME/.sh/spotlight/bin/spotlight" "${1:-}") || return
+    LBUFFER+=$selected
+    zle redisplay
+  }
+  zle -N spotlight
+  spotlight-files() { spotlight --files; }
+  zle -N spotlight-files
+  bindkey '^@' spotlight
+  bindkey '^P' spotlight-files
+fi
 
 bindkey               $KEY_CMD_Y              redo
 bindkey               $KEY_CMD_Z              undo
