@@ -24,7 +24,7 @@ Press `Ctrl+Space` for Commands or `Ctrl+P` for Files. In Zsh, selections are in
 
 Spotlight requires Python 3.11+, Bash, and fzf; tmux popups require tmux 3.2+. When Spotlight is selected, the installer installs Python and checks its version. Personal settings, actions, modules, and themes remain in the user's XDG configuration directories. See the [Spotlight guide](spotlight/README.md) and [module documentation](spotlight/MODULES.md).
 
-Reload Zsh with `source ~/.sh/.zshrc` and tmux with `tmux source-file ~/.tmux.conf` after changing bindings. The terminal must pass the configured shortcuts through to Zsh or tmux.
+Reload Zsh with `source ~/.sh/.zshrc` and tmux with `tmux source-file ~/.tmux.conf` after changing bindings. A running tmux server keeps its old bindings until reloaded or restarted, even after updating `~/.sh`; if `Ctrl+Space` opens full-screen Spotlight inside tmux instead of a popup, Zsh received the key because tmux has no Spotlight binding yet (check with `tmux list-keys -T root | grep spotlight`). The terminal must pass the configured shortcuts through to Zsh or tmux.
 
 ## Development
 
