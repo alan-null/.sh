@@ -8,6 +8,15 @@ One liner install:
 bash <(curl -fsSL https://raw.githubusercontent.com/alan-null/.sh/refs/heads/master/install.sh)
 ```
 
+### Unattended install
+
+The optional-components menu is skipped when no terminal is available (Ansible, cron, CI), or when `SH_UNATTENDED=1` is set; `SH_UNATTENDED=0` forces the menu. Unattended installs use the menu defaults unless `SH_COMPONENTS` lists the components to install, comma-separated: `git-aliases`, `terminal-aliases`, `spotlight`, `btop`, `yazi`. An empty value installs none, and an unknown id stops the install. The installer exits non-zero if a selected component fails and does not start Zsh at the end. `sudo` must not prompt for a password.
+
+```bash
+SH_UNATTENDED=1 SH_COMPONENTS=git-aliases,terminal-aliases,spotlight,btop \
+  bash <(curl -fsSL https://raw.githubusercontent.com/alan-null/.sh/refs/heads/master/install.sh)
+```
+
 ## Updates
 
 Run `sh-update` after loading this repository's Zsh configuration, or run `bash ~/.sh/update.sh` from any directory. The updater fast-forwards the current branch from its configured upstream, then checks out already initialized recursive submodules at the commits recorded by that branch.
