@@ -4,6 +4,10 @@ export PATH="$HOME/.local/bin:$PATH"
 # Update the shell checkout and all pinned submodules in one command.
 sh-update() { bash "$HOME/.sh/update.sh" "$@"; }
 
+# Spotlight actions shipped with .sh (tmux popups get this from .tmux.conf).
+[[ ":$SPOTLIGHT_EXTRA_ACTION_PATH:" == *":$HOME/.sh/actions:"* ]] ||
+  export SPOTLIGHT_EXTRA_ACTION_PATH="$HOME/.sh/actions${SPOTLIGHT_EXTRA_ACTION_PATH:+:$SPOTLIGHT_EXTRA_ACTION_PATH}"
+
 # KEYS
 export KEY_ESC=$'^['
 

@@ -1,0 +1,7 @@
+[[actions]]
+id = "sh.update"
+title = "Update .sh"
+description = "Fast-forward the .sh checkout and its pinned submodules"
+keywords = ["dotfiles", "shell", "upgrade", "pull", "sh-update"]
+category = ".sh"
+command = "sh-update"
